@@ -49,10 +49,18 @@ public class CookieDataStore {
             return Collections.emptySet();
         }
 
+        if (log.isTraceEnabled()) {
+            var pqEntries = Arrays.asList(pq.toArray(CookieEntry[]::new));
+            pqEntries.sort(cookieComparator);
+            log.trace("Priority queue for date is {}", pqEntries);
+            log.trace("Cookie count map for date is {}", cookieNameCnt.get(date));
+        }
+
         var cookies = new HashSet<String>();
         var maxCnt = pq.peek().hitCount();
         while (!pq.isEmpty()) {
             var ce= pq.poll();
+            log.debug("Polled entry {} from our heap", ce);
             if (ce.hitCount() != maxCnt) {
                 break;
             }

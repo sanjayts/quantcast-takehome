@@ -3,6 +3,7 @@ package net.sanjayts.quantcast.takehome.cookiestore.core;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 /**
  * The runner code responsible for orchestrating the entire program flow. This class receives the front-loaded
@@ -14,17 +15,13 @@ import java.time.LocalDate;
  * application logic by passing in precise mocks and eases swapping out implementations.
  */
 @Slf4j
-// todo test cases
 public class Runner {
 
-    public void run(CookieParser parser, CookieDataStore store, LocalDate targetDate) {
+    public Set<String> run(CookieParser parser, CookieDataStore store, LocalDate targetDate) {
         parser.cookieInfoStream().forEach(ci -> {
-           log.debug("Cookie streamed from parser -- {}", ci);
            store.addCookie(ci);
         });
-        // If no matching cookies found, nothing gets printed on STDOUT. Is this user-friendly enough?
-        // Maybe a not found message with a non-zero return code to ensure we stay CLI friendly? Worth a thought...
-        store.mostActiveFor(targetDate).forEach(log::info);
+        return store.mostActiveFor(targetDate);
     }
 
 }

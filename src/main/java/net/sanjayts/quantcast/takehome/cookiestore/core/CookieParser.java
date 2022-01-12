@@ -2,6 +2,7 @@ package net.sanjayts.quantcast.takehome.cookiestore.core;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.sanjayts.quantcast.takehome.cookiestore.exceptions.ParserException;
 import net.sanjayts.quantcast.takehome.cookiestore.model.CookieInfo;
 
@@ -15,7 +16,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-// TODO javadocs
+
+/**
+ * The class responsible for "parsing" cookie information out of the log file and creating a domain object out of it. This
+ * class deals with validating the source headers and skipping entries/lines which are malformed.
+ */
+@Slf4j
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CookieParser {
 
@@ -25,6 +31,10 @@ public class CookieParser {
 
     private LocalDate cutoffDate;
 
+    /**
+     * Given a cookie source, the file headers and cutoff date, create a new parser. The headers will be used to validate
+     * that the source data format conforms to our assumptions.
+     */
     public static CookieParser createFromAndValidate(CookieSource source, List<String> headers, LocalDate cutoffDate) {
         var parser = new CookieParser(source, headers, cutoffDate);
         parser.validateHeaders();
@@ -44,19 +54,37 @@ public class CookieParser {
         }
     }
 
+    /**
+     * Streams all cookie objects after reading them and parsing them from the underlying source. This method takes
+     * care of skipping all unnecessary entries and stopping the parser for reading entries after the cutoff date. The
+     * terminating condition for the stream is when the underlying source runs out of data to hand over.
+     */
     public Stream<CookieInfo> cookieInfoStream() {
-        var cutoffPred = pred();
-        return Stream.generate(() -> {
-            final String line = source.nextLine();
-            return parseInfo(line);
-        }).filter(cutoffPred).takeWhile(Objects::nonNull);
+        var filterPred = getFilterPred();
+        var twPred = getTakeWhilePred();
+        return Stream.generate(() -> parseInfo(source.nextLine())).filter(filterPred).takeWhile(twPred);
         // The terminating condition of our stream -- when we encounter a `null`,
         // we know we have hit EOF and should now terminate the stream. We also terminate when the parsed date is
         // <= the target date.
     }
 
-    private Predicate<CookieInfo> pred() {
-        return (ci -> ci == null || (ci.isValid() && ci.getTimestamp().toLocalDate().isAfter(cutoffDate)));
+    private Predicate<CookieInfo> getTakeWhilePred() {
+        return (ci -> {
+            if (ci == null) {
+                log.debug("No more data found in the source so terminate our stream");
+                return false;
+            } else if (ci.getTimestamp().toLocalDate().isBefore(cutoffDate)) {
+               log.debug("Early exit from our parsing loop since we have gone below the cutoff date {} with cookie {}",
+                       cutoffDate, ci);
+               return false;
+           } else {
+                return true;
+            }
+        });
+    }
+
+    private Predicate<CookieInfo> getFilterPred() {
+        return (ci -> ci == null || ci.isValid());
     }
 
     private CookieInfo parseInfo(String line) {
@@ -76,6 +104,7 @@ public class CookieParser {
         try {
             return new CookieInfo(parts[0], parseDate(parts[1]));
         } catch (Exception e) {
+            log.debug("Failed to parse the date in line {}, creating an invalid cookie", line);
             return CookieInfo.createInvalid(line);
         }
     }

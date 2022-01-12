@@ -22,6 +22,10 @@ class CookieDataStoreTest {
             new CookieInfo("asdf3sdfasdf", zDtTimeOf(2022, 1, 1, 3)),
             new CookieInfo("csdafg3423ds", zDtTimeOf(2022, 1, 1, 4)),
             new CookieInfo("csdafg3423ds", zDtTimeOf(2022, 1, 1, 5)),
+            new CookieInfo("qwdafg3423ds", zDtTimeOf(2022, 1, 1, 6)),
+            new CookieInfo("qwdafg3423ds", zDtTimeOf(2022, 1, 1, 7)),
+            new CookieInfo("tydafg3423ds", zDtTimeOf(2022, 1, 1, 8)),
+            new CookieInfo("yudafg3423ds", zDtTimeOf(2022, 1, 1, 9)),
 
             new CookieInfo("poiuwerwerwer", zDtTimeOf(2022, 2, 2, 1)),
             new CookieInfo("poiuwerwerwer", zDtTimeOf(2022, 2, 2, 2)),

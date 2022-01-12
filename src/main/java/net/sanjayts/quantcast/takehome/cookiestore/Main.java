@@ -38,17 +38,22 @@ public class Main implements Callable<Integer> {
 			log.debug("Successfully parsed the command line arguments -- file={}, target date={}", logFile.toURI(), targetDate);
 			var bufReader = readerFromLogfile();
 			var cookieSource = new CookieSource(bufReader);
-			// Since the timestamps in source file are sorted in desc format, the cutoff date becomes the day before
-			// the target date i.e. if target date is 2021-01-01, we should stop parsing the source once we encounter
-			// any date time <= 2020-12-31
-			var cutoffDate = targetDate.plusDays(-1);
-			var parser = CookieParser.createFromAndValidate(cookieSource, List.of("cookie,timestamp"), cutoffDate);
+
+			// Since the timestamps in source file are sorted in desc format, the target date becomes the cutoff date.
+			// So for e.g. if the target date is 2020-01-15, then any dates less than 2020-01-15 00:00:00.000 should be
+			// skipped. This means that 2020-01-15 01:00:00 will still be considered which is what we expect.
+			var parser = CookieParser.createFromAndValidate(cookieSource, List.of("cookie", "timestamp"), targetDate);
 			var dataStore = new CookieDataStore();
-			new Runner().run(parser, dataStore, targetDate);
+			var mostActiveCookies = new Runner().run(parser, dataStore, targetDate);
+
+			// If no matching cookies found, nothing gets printed on STDOUT. Is this user-friendly enough?
+			// Maybe a not found message with a non-zero return code to ensure we stay CLI friendly? Worth a thought...
+			mostActiveCookies.forEach(log::info);
+
 			return 0;
 		} catch (Exception e) {
 			log.error("{}", e.getMessage());
-			return -1;
+			return 1;
 		}
 	}
 

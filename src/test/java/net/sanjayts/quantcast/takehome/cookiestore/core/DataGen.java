@@ -5,7 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 /**
  * Test data generator for ease of load/functional testing.
@@ -27,7 +28,7 @@ public class DataGen {
 
     public static void main(String[] args) throws Exception {
         var out = Files.newBufferedWriter(Path.of("test-data/load-test.txt"), StandardCharsets.UTF_8);
-        new DataGen().generateData(out, 1_000_000);
+        new DataGen().generateData(out, 1_000);
     }
 
     void generateData(Writer out, int recordCnt) throws Exception {
@@ -35,6 +36,7 @@ public class DataGen {
         var noOfTs = TIMESTAMPS.length;
         var rand = new SecureRandom();
         try (out) {
+            out.write("cookie,timestamp\n");
             var data = new ArrayList<Cookie>();
             for (int i = 0; i < recordCnt; ++i) {
                 var rName = NAMES[rand.nextInt(noOfNames)];

@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +19,7 @@ class CookieParserTest {
 
     private static final List<String> DEFAULT_HEADERS = List.of("cookie", "timestamp");
 
-    private static final LocalDate cutoffDate = LocalDate.of(2018, 12, 8);
+    private static final LocalDate cutoffDate = LocalDate.of(2018, 12, 9);
 
     @Test
     void givenNewParser_whenNoDataFoundInSource_thenAnExceptionShouldBeThrown() {
@@ -74,6 +73,36 @@ class CookieParserTest {
         var cookies = parser.cookieInfoStream().toList();
         var zdt = ZonedDateTime.of(LocalDateTime.of(2018, 12, 9, 0, 0), ZoneOffset.UTC);
         assertThat(cookies).isEqualTo(List.of(new CookieInfo("c1", zdt)));
+    }
+
+    @Test
+    void givenNewParser_whenSourceHasCookiesGreaterThanCutoff_thenOnlyRelevantCookiesShouldBeReturned() {
+        var source = mock(CookieSource.class);
+        // Notice the +01:00, here we are also trying to test out our offset logic
+        var entries = new String[]{
+                "c1,2018-12-10T02:00:00+00:00",
+                "c2,2018-12-10T01:00:00+00:00",
+                "c3,2018-12-09T02:00:00+00:00",
+                "c4,2018-12-09T01:00:00+00:00",
+                "c5,2018-12-08T02:00:00+00:00",
+                "c6,2018-12-08T01:00:00+00:00",
+                "c7,2018-12-07T02:00:00+00:00",
+                "asdf,aasdf",
+                "c8,2018-12-07T01:00:00+00:00",
+                "",
+                null
+        };
+        doReturn("cookie,timestamp", entries).when(source).nextLine();
+        var parser = CookieParser.createFromAndValidate(source, DEFAULT_HEADERS, cutoffDate);
+        var cookies = parser.cookieInfoStream().toList();
+
+        var expected = List.of(
+                new CookieInfo("c1", ZonedDateTime.of(LocalDateTime.of(2018, 12, 10, 2, 0), ZoneOffset.UTC)),
+                new CookieInfo("c2", ZonedDateTime.of(LocalDateTime.of(2018, 12, 10, 1, 0), ZoneOffset.UTC)),
+                new CookieInfo("c3", ZonedDateTime.of(LocalDateTime.of(2018, 12, 9, 2, 0), ZoneOffset.UTC)),
+                new CookieInfo("c4", ZonedDateTime.of(LocalDateTime.of(2018, 12, 9, 1, 0), ZoneOffset.UTC))
+        );
+        assertThat(cookies).isEqualTo(expected);
     }
 
 
