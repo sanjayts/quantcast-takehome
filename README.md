@@ -13,6 +13,10 @@ To run with verbose logging enabled please run the following:
     export CS_ROOT_LEVEL=debug
     ./target/cookie-store -f test-data/load-test.txt -d 2018-12-12
 
+    OR
+
+    export CS_ROOT_LEVEL=trace # for dumping internal state
+
 ## Building From Source
 
 If you are interested in building the code from source, please run the below command:
